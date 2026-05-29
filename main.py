@@ -201,20 +201,56 @@ def scrape_google() -> list[dict]:
     return []
 
 
-def scrape_openai() -> list[dict]:
+def fetch_openai_from_openrouter() -> list[dict]:
     """
-    OpenAI's pricing page is JS-rendered, so we use hardcoded data
-    and note the source URL for transparency.
-    OpenAI does not publish a parseable static pricing page.
+    Fetch OpenAI model pricing from the OpenRouter public API.
+    OpenRouter exposes pricing as cost per token; we convert to $/MTok.
+    Falls back to hardcoded data if the API is unreachable.
     """
-    logger.info("OpenAI: using hardcoded data (JS-rendered page)")
-    return [
-        {"provider": "OpenAI", "model": "GPT-4.1",     "tier": "standard",  "input": 2.00,  "output": 8.00,  "note": ""},
-        {"provider": "OpenAI", "model": "GPT-4o",      "tier": "standard",  "input": 2.50,  "output": 10.00, "note": ""},
-        {"provider": "OpenAI", "model": "GPT-4o mini", "tier": "lite",      "input": 0.15,  "output": 0.60,  "note": ""},
-        {"provider": "OpenAI", "model": "o3",          "tier": "reasoning", "input": 2.00,  "output": 8.00,  "note": "Reasoning tokens billed at output rate"},
-        {"provider": "OpenAI", "model": "o4-mini",     "tier": "reasoning", "input": 1.10,  "output": 4.40,  "note": "Reasoning tokens billed at output rate"},
-    ]
+    url = "https://openrouter.ai/api/v1/models"
+    try:
+        with httpx.Client(timeout=20, headers=HEADERS, follow_redirects=True) as client:
+            r = client.get(url)
+            r.raise_for_status()
+        all_models = r.json().get("data", [])
+        rows = []
+        for m in all_models:
+            model_id = m.get("id", "")
+            if not model_id.startswith("openai/"):
+                continue
+            name = m.get("name", model_id.split("/")[-1])
+            pricing = m.get("pricing", {})
+            try:
+                inp_per_token = float(pricing.get("prompt") or 0)
+                out_per_token = float(pricing.get("completion") or 0)
+            except (ValueError, TypeError):
+                continue
+            if inp_per_token == 0 and out_per_token == 0:
+                continue
+            # Convert per-token → per-million-tokens
+            inp = round(inp_per_token * 1_000_000, 4)
+            out = round(out_per_token * 1_000_000, 4)
+            slug = model_id.lower()
+            if any(x in slug for x in ("o1", "o3", "o4")):
+                tier = "reasoning"
+            elif any(x in slug for x in ("mini", "nano", "3.5-turbo")):
+                tier = "lite"
+            else:
+                tier = "standard"
+            rows.append({
+                "provider": "OpenAI",
+                "model": name,
+                "tier": tier,
+                "input": inp,
+                "output": out,
+                "note": "",
+            })
+        if rows:
+            logger.info(f"OpenRouter OpenAI fetch: got {len(rows)} models")
+            return rows
+    except Exception as e:
+        logger.warning(f"OpenRouter fetch failed: {e}")
+    return []
 
 
 # ── Cache logic ────────────────────────────────────────────────────────────────
@@ -247,19 +283,19 @@ def fetch_pricing() -> dict:
         return cached
 
     logger.info("Fetching fresh pricing data…")
-    anthropic = scrape_anthropic()
-    google    = scrape_google()
-    openai    = scrape_openai()
+    anthropic    = scrape_anthropic()
+    google       = scrape_google()
+    openai_live  = fetch_openai_from_openrouter()
 
-    # Merge: prefer scraped, fall back per-provider
-    anthropic = anthropic or [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"]
-    google    = google    or [d for d in FALLBACK_DATA if d["provider"] == "Google"]
-    # openai always uses hardcoded (JS-rendered)
+    # Merge: prefer live/scraped, fall back per-provider
+    anthropic = anthropic   or [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"]
+    google    = google      or [d for d in FALLBACK_DATA if d["provider"] == "Google"]
+    openai    = openai_live or [d for d in FALLBACK_DATA if d["provider"] == "OpenAI"]
 
     models = anthropic + openai + google
     sources_used = {
         "Anthropic": "scraped" if anthropic and anthropic != [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"] else "fallback",
-        "OpenAI":    "hardcoded (JS page)",
+        "OpenAI":    "openrouter.ai/api/v1/models" if openai_live else "fallback",
         "Google":    "scraped" if google and google != [d for d in FALLBACK_DATA if d["provider"] == "Google"] else "fallback",
     }
 
