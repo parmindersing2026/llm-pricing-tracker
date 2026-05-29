@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Pricing Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridjs@5.0.2/dist/theme/mermaid.min.css" integrity="sha384-GjWaFBKLTj8Y9Dv8XGS7EAKxSoHqk0OhXiXTi2IkiI+EsCRGMz+HJFMZbBRpUuW" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/gridjs@5.0.2/dist/gridjs.umd.js" integrity="sha384-/XXDzxe4FsGiAe50i/u9pY/Vy/uX654MHB1xoc1BJNnH1WXHhqHga9g3q5tF4gj7" crossorigin="anonymous"></script>
+<style>
+  :root { color-scheme: light; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    background: #1a1a2e;
+    color: white;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+  .topbar-meta { font-size: 0.74rem; color: #aab; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .topbar-meta a { color: #7eb3ff; text-decoration: none; }
+  .topbar-meta a:hover { text-decoration: underline; }
+  #refreshBtn {
+    padding: 6px 14px;
+    background: #4a6cf7;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  #refreshBtn:hover { background: #3657d4; }
+  #refreshBtn:disabled { background: #555; cursor: default; }
+
+  /* ── Main layout ── */
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ── Status banner ── */
+  .status-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    background: white;
+    border: 1.5px solid #e4e8ef;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-chip strong { color: #1a1a2e; font-size: 0.82rem; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
+  .dot.stale { background: #f59e0b; }
+  .dot.error { background: #ef4444; }
+
+  /* ── Filter row ── */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-label { font-size: 0.78rem; color: #888; margin-right: 4px; }
+  .filter-btn {
+    padding: 5px 16px;
+    border-radius: 20px;
+    border: 1.5px solid #dde1ea;
+    background: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #444;
+    transition: all 0.14s;
+  }
+  .filter-btn:hover { border-color: #4a6cf7; color: #4a6cf7; }
+  .filter-btn.active           { background: #4a6cf7; color: white; border-color: #4a6cf7; }
+  .filter-btn.active.anthropic { background: #c47b3a; border-color: #c47b3a; }
+  .filter-btn.active.openai    { background: #10a37f; border-color: #10a37f; }
+  .filter-btn.active.google    { background: #4285f4; border-color: #4285f4; }
+
+  /* ── Cards ── */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1.5px solid #e4e8ef;
+    transition: box-shadow 0.14s, transform 0.14s;
+  }
+  .card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .provider-badge {
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em;
+    padding: 2px 8px; border-radius: 10px; text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .badge-Anthropic { background: #fdf0e6; color: #c47b3a; }
+  .badge-OpenAI    { background: #e6f7f3; color: #10a37f; }
+  .badge-Google    { background: #e8f0fe; color: #4285f4; }
+
+  .model-name { font-size: 0.9rem; font-weight: 600; color: #1a1a2e; flex: 1; min-width: 0; }
+  .tier-badge {
+    font-size: 0.62rem; padding: 2px 8px; border-radius: 10px;
+    font-weight: 600; flex-shrink: 0;
+  }
+  .tier-flagship  { background: #fff3cd; color: #856404; }
+  .tier-standard  { background: #dbeafe; color: #1e40af; }
+  .tier-lite      { background: #dcfce7; color: #166534; }
+  .tier-reasoning { background: #fee2e2; color: #991b1b; }
+
+  .divider { height: 1px; background: #f0f2f5; margin: 10px 0; }
+  .price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .price-label { font-size: 0.76rem; color: #777; }
+  .price-value { font-size: 0.84rem; font-weight: 700; color: #1a1a2e; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .ratio-pill {
+    display: inline-block; font-size: 0.64rem; padding: 2px 8px;
+    border-radius: 8px; background: #f0f2f5; color: #666;
+  }
+  .card-note { font-size: 0.68rem; color: #999; margin-top: 6px; }
+
+  /* ── Table section ── */
+  .section-title { font-size: 0.9rem; font-weight: 600; color: #444; margin-bottom: 10px; }
+  .gridjs-wrapper { border-radius: 12px !important; border: 1.5px solid #e4e8ef !important; overflow: hidden; }
+  th.gridjs-th { background: #f8f9fb !important; font-size: 0.77rem !important; }
+  td.gridjs-td { font-size: 0.79rem !important; }
+
+  /* ── Loading / error ── */
+  .loading-state, .error-state {
+    text-align: center; padding: 60px 20px; color: #888; font-size: 0.9rem;
+  }
+  .error-state { color: #ef4444; }
+  .spinner {
+    display: inline-block; width: 28px; height: 28px; border: 3px solid #e4e8ef;
+    border-top-color: #4a6cf7; border-radius: 50%; animation: spin 0.7s linear infinite;
+    margin-bottom: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid #e4e8ef;
+    font-size: 0.72rem; color: #aaa; text-align: center;
+  }
+  .footer a { color: #4a6cf7; text-decoration: none; }
+
+  @media (max-width: 480px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .topbar { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>🤖 LLM API Pricing Tracker</h1>
+  <div class="topbar-meta">
+    <span id="fetchedAt">Loading…</span>
+    <span>Next refresh: <strong id="nextRefresh">—</strong></span>
+    <a href="https://platform.claude.com/docs/en/about-claude/pricing" target="_blank">Anthropic docs ↗</a>
+    <a href="https://openai.com/api/pricing/" target="_blank">OpenAI docs ↗</a>
+    <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank">Google docs ↗</a>
+    <button id="refreshBtn" onclick="forceRefresh()">⟳ Force refresh</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="status-bar" id="statusBar">
+    <div class="stat-chip"><span class="dot" id="statusDot"></span> <span id="statusText">Loading…</span></div>
+    <div class="stat-chip">Models tracked: <strong id="modelCount">—</strong></div>
+    <div class="stat-chip">Providers: <strong>Anthropic · OpenAI · Google</strong></div>
+  </div>
+
+  <div class="filter-row">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn anthropic" data-filter="Anthropic">Anthropic</button>
+    <button class="filter-btn openai"    data-filter="OpenAI">OpenAI</button>
+    <button class="filter-btn google"    data-filter="Google">Google</button>
+  </div>
+
+  <div id="cardsGrid" class="cards-grid">
+    <div class="loading-state" style="grid-column:1/-1">
+      <div class="spinner"></div><br>Fetching latest prices…
+    </div>
+  </div>
+
+  <div class="section-title">Full comparison table</div>
+  <div id="pricingTable"></div>
+
+  <div class="footer">
+    Prices are per 1 million tokens (USD) · Auto-refreshes every 7 days from official provider docs ·
+    <a href="/api/pricing" target="_blank">Raw JSON API</a> ·
+    <a href="/api/health" target="_blank">Health</a>
+  </div>
+</div>
+
+<script>
+let allModels = [];
+let activeFilter = "all";
+let gridInstance = null;
+
+const TIER_MAP = {
+  flagship:  ["Flagship",  "tier-flagship"],
+  standard:  ["Standard",  "tier-standard"],
+  lite:      ["Lite",      "tier-lite"],
+  reasoning: ["Reasoning", "tier-reasoning"],
+};
+
+function fmt(n) {
+  return "$" + Number(n).toFixed(n < 1 ? 2 : 2);
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { return iso; }
+}
+
+async function loadPricing() {
+  try {
+    const res = await fetch("/api/pricing");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    allModels = data.models || [];
+
+    document.getElementById("fetchedAt").textContent = "Updated: " + fmtDate(data.fetched_at_iso);
+    document.getElementById("nextRefresh").textContent = fmtDate(data.next_refresh_iso);
+    document.getElementById("modelCount").textContent = allModels.length;
+
+    const dot = document.getElementById("statusDot");
+    const txt = document.getElementById("statusText");
+    const sources = data.sources || {};
+    const anyFallback = Object.values(sources).some(v => v === "fallback");
+    if (anyFallback) {
+      dot.className = "dot stale";
+      txt.textContent = "Some data from fallback (scrape unavailable)";
+    } else {
+      dot.className = "dot";
+      txt.textContent = "Live data — all sources scraped successfully";
+    }
+
+    renderCards(activeFilter);
+    renderTable(activeFilter);
+  } catch (err) {
+    document.getElementById("cardsGrid").innerHTML =
+      `<div class="error-state" style="grid-column:1/-1">⚠️ Could not load pricing data.<br><small>${err.message}</small></div>`;
+    document.getElementById("statusDot").className = "dot error";
+    document.getElementById("statusText").textContent = "Error loading data";
+  }
+}
+
+async function forceRefresh() {
+  const btn = document.getElementById("refreshBtn");
+  btn.disabled = true;
+  btn.textContent = "Refreshing…";
+  try {
+    await fetch("/api/refresh");
+    await loadPricing();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⟳ Force refresh";
+  }
+}
+
+function renderCards(filter) {
+  const grid = document.getElementById("cardsGrid");
+  const data = filter === "all" ? allModels : allModels.filter(d => d.provider === filter);
+  if (!data.length) {
+    grid.innerHTML = `<div class="loading-state" style="grid-column:1/-1">No models found.</div>`;
+    return;
+  }
+  grid.innerHTML = "";
+  data.forEach(item => {
+    const [tierLabel, tierClass] = TIER_MAP[item.tier] || ["Standard", "tier-standard"];
+    const ratio = item.input > 0 ? (item.output / item.input).toFixed(1) : "—";
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <div class="card-header">
+        <span class="provider-badge badge-${item.provider}">${item.provider}</span>
+        <span class="model-name">${item.model}</span>
+        <span class="tier-badge ${tierClass}">${tierLabel}</span>
+      </div>
+      <div class="divider"></div>
+      <div class="price-row">
+        <span class="price-label">Input / 1M tokens</span>
+        <span class="price-value">${fmt(item.input)}</span>
+      </div>
+      <div class="price-row">
+        <span class="price-label">Output / 1M tokens</span>
+        <span class="price-value">${fmt(item.output)}</span>
+      </div>
+      <div class="card-footer">
+        <span class="ratio-pill">Output/Input: ${ratio}×</span>
+      </div>
+      ${item.note ? `<div class="card-note">📌 ${item.note}</div>` : ""}
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function renderTable(filter) {
+  const data = filter === "all" ? allModels : allModels.filter(d => d.provider === filter);
+  const tableEl = document.getElementById("pricingTable");
+  tableEl.innerHTML = "";
+
+  if (gridInstance) {
+    try { gridInstance.destroy(); } catch (_) {}
+  }
+
+  gridInstance = new gridjs.Grid({
+    columns: [
+      { name: "Provider", width: "110px" },
+      { name: "Model",    width: "210px" },
+      { name: "Tier",     width: "100px" },
+      {
+        name: "Input $/1M", width: "110px",
+        sort: { compare: (a, b) => parseFloat(a.replace("$","")) - parseFloat(b.replace("$","")) }
+      },
+      {
+        name: "Output $/1M", width: "110px",
+        sort: { compare: (a, b) => parseFloat(a.replace("$","")) - parseFloat(b.replace("$","")) }
+      },
+      { name: "Notes", width: "220px" },
+    ],
+    data: data.map(d => [
+      d.provider,
+      d.model,
+      (TIER_MAP[d.tier] || ["Standard"])[0],
+      fmt(d.input),
+      fmt(d.output),
+      d.note || "—",
+    ]),
+    search: true,
+    sort: true,
+    pagination: { limit: 25 },
+  });
+  gridInstance.render(tableEl);
+}
+
+// Filter buttons
+document.querySelectorAll(".filter-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    renderCards(activeFilter);
+    renderTable(activeFilter);
+  });
+});
+
+// Boot
+loadPricing();
+</script>
+</body>
+</html>
