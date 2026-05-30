@@ -216,7 +216,7 @@
   <div id="pricingTable"></div>
 
   <div class="footer">
-    Prices are per 1 million tokens (USD) · Auto-refreshes every 7 days from official provider docs ·
+    Prices are per 1 million tokens (USD) · Auto-refreshes every 7 days · Sources: Anthropic docs, OpenRouter API ·
     <a href="/api/pricing" target="_blank">Raw JSON API</a> ·
     <a href="/api/health" target="_blank">Health</a>
   </div>
@@ -259,13 +259,15 @@ async function loadPricing() {
     const dot = document.getElementById("statusDot");
     const txt = document.getElementById("statusText");
     const sources = data.sources || {};
-    const anyFallback = Object.values(sources).some(v => v === "fallback");
-    if (anyFallback) {
+    const fallbackProviders = Object.entries(sources)
+      .filter(([, v]) => v === "fallback")
+      .map(([k]) => k);
+    if (fallbackProviders.length) {
       dot.className = "dot stale";
-      txt.textContent = "Some data from fallback (scrape unavailable)";
+      txt.textContent = "Fallback data for: " + fallbackProviders.join(", ") + " (live fetch unavailable)";
     } else {
       dot.className = "dot";
-      txt.textContent = "Live data — all sources scraped successfully";
+      txt.textContent = "Live data — all sources up to date";
     }
 
     renderCards(activeFilter);
