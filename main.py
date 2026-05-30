@@ -8,7 +8,8 @@ import json
 import time
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
+from collections.abc import Callable
 
 import httpx
 from fastapi import FastAPI
@@ -86,7 +87,7 @@ def _fetch_openrouter_all() -> list[dict]:
     return []
 
 
-def _openrouter_rows(all_models: list, prefix: str, provider: str, tier_fn) -> list[dict]:
+def _openrouter_rows(all_models: list[dict], prefix: str, provider: str, tier_fn: Callable[[str], str]) -> list[dict]:
     """Filter OpenRouter model list by id prefix, convert pricing to $/MTok."""
     rows = []
     for m in all_models:
@@ -187,8 +188,8 @@ def fetch_pricing() -> dict:
     payload = {
         "models": models,
         "fetched_at": time.time(),
-        "fetched_at_iso": datetime.utcnow().isoformat() + "Z",
-        "next_refresh_iso": datetime.utcfromtimestamp(time.time() + CACHE_TTL_SECONDS).isoformat() + "Z",
+        "fetched_at_iso": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "next_refresh_iso": datetime.fromtimestamp(time.time() + CACHE_TTL_SECONDS, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
         "sources": sources_used,
     }
     save_cache(payload)
