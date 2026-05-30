@@ -12,7 +12,6 @@ from pathlib import Path
 from datetime import datetime
 
 import httpx
-from bs4 import BeautifulSoup
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
@@ -137,120 +136,64 @@ def scrape_anthropic() -> list[dict]:
     return []
 
 
-def scrape_google() -> list[dict]:
-    """
-    Scrape Google Gemini API pricing page.
-    """
-    url = "https://ai.google.dev/gemini-api/docs/pricing"
-    try:
-        with httpx.Client(timeout=20, headers=HEADERS, follow_redirects=True) as client:
-            r = client.get(url)
-            r.raise_for_status()
-        soup = BeautifulSoup(r.text, "html.parser")
-        rows = []
-        import re
-        # Each model section is an h2; we look for tables following them
-        for h2 in soup.find_all("h2"):
-            model_name = h2.get_text(strip=True)
-            if not model_name or len(model_name) < 4:
-                continue
-            # Find the first table after this h2
-            sibling = h2.find_next_sibling()
-            table = None
-            while sibling:
-                if sibling.name == "table":
-                    table = sibling
-                    break
-                if sibling.name == "h2":
-                    break
-                sibling = sibling.find_next_sibling()
-            if not table:
-                continue
-            # Look for "Input price" and "Output price" rows
-            inp_val = out_val = None
-            for tr in table.find_all("tr"):
-                cells = [td.get_text(" ", strip=True) for td in tr.find_all(["td", "th"])]
-                if len(cells) < 2:
-                    continue
-                label = cells[0].lower()
-                paid_cell = cells[2] if len(cells) > 2 else cells[1]
-                if "input price" in label:
-                    inp_val = _parse_price(paid_cell)
-                elif "output price" in label:
-                    out_val = _parse_price(paid_cell)
-            if inp_val is None or out_val is None:
-                continue
-            tier = (
-                "lite"     if "lite" in model_name.lower() else
-                "flagship" if "pro" in model_name.lower() or "3.5" in model_name else
-                "standard"
-            )
-            rows.append({
-                "provider": "Google",
-                "model": model_name,
-                "tier": tier,
-                "input": inp_val,
-                "output": out_val,
-                "note": "",
-            })
-        if rows:
-            logger.info(f"Google scraper: got {len(rows)} models")
-            return rows
-    except Exception as e:
-        logger.warning(f"Google scrape failed: {e}")
-    return []
-
-
-def fetch_openai_from_openrouter() -> list[dict]:
-    """
-    Fetch OpenAI model pricing from the OpenRouter public API.
-    OpenRouter exposes pricing as cost per token; we convert to $/MTok.
-    Falls back to hardcoded data if the API is unreachable.
-    """
+def _fetch_openrouter_all() -> list[dict]:
+    """Fetch all models from OpenRouter API once; returns raw list or []."""
     url = "https://openrouter.ai/api/v1/models"
     try:
         with httpx.Client(timeout=20, headers=HEADERS, follow_redirects=True) as client:
             r = client.get(url)
             r.raise_for_status()
-        all_models = r.json().get("data", [])
-        rows = []
-        for m in all_models:
-            model_id = m.get("id", "")
-            if not model_id.startswith("openai/"):
-                continue
-            name = m.get("name", model_id.split("/")[-1])
-            pricing = m.get("pricing", {})
-            try:
-                inp_per_token = float(pricing.get("prompt") or 0)
-                out_per_token = float(pricing.get("completion") or 0)
-            except (ValueError, TypeError):
-                continue
-            if inp_per_token == 0 and out_per_token == 0:
-                continue
-            # Convert per-token → per-million-tokens
-            inp = round(inp_per_token * 1_000_000, 4)
-            out = round(out_per_token * 1_000_000, 4)
-            slug = model_id.lower()
-            if any(x in slug for x in ("o1", "o3", "o4")):
-                tier = "reasoning"
-            elif any(x in slug for x in ("mini", "nano", "3.5-turbo")):
-                tier = "lite"
-            else:
-                tier = "standard"
-            rows.append({
-                "provider": "OpenAI",
-                "model": name,
-                "tier": tier,
-                "input": inp,
-                "output": out,
-                "note": "",
-            })
-        if rows:
-            logger.info(f"OpenRouter OpenAI fetch: got {len(rows)} models")
-            return rows
+        return r.json().get("data", [])
     except Exception as e:
         logger.warning(f"OpenRouter fetch failed: {e}")
     return []
+
+
+def _openrouter_rows(all_models: list, prefix: str, provider: str, tier_fn) -> list[dict]:
+    """Filter OpenRouter model list by id prefix, convert pricing to $/MTok."""
+    rows = []
+    for m in all_models:
+        model_id = m.get("id", "")
+        if not model_id.startswith(prefix):
+            continue
+        name = m.get("name", model_id.split("/")[-1])
+        pricing = m.get("pricing", {})
+        try:
+            inp_per_token = float(pricing.get("prompt") or 0)
+            out_per_token = float(pricing.get("completion") or 0)
+        except (ValueError, TypeError):
+            continue
+        if inp_per_token == 0 and out_per_token == 0:
+            continue
+        rows.append({
+            "provider": provider,
+            "model": name,
+            "tier": tier_fn(model_id),
+            "input": round(inp_per_token * 1_000_000, 4),
+            "output": round(out_per_token * 1_000_000, 4),
+            "note": "",
+        })
+    return rows
+
+
+def _openai_tier(model_id: str) -> str:
+    slug = model_id.lower()
+    if any(x in slug for x in ("o1", "o3", "o4")):
+        return "reasoning"
+    if any(x in slug for x in ("mini", "nano", "3.5-turbo")):
+        return "lite"
+    return "standard"
+
+
+def _google_tier(model_id: str) -> str:
+    slug = model_id.lower()
+    if "thinking" in slug:
+        return "reasoning"
+    if any(x in slug for x in ("lite", "nano")):
+        return "lite"
+    if any(x in slug for x in ("pro", "ultra")):
+        return "flagship"
+    return "standard"
 
 
 # ── Cache logic ────────────────────────────────────────────────────────────────
@@ -283,20 +226,26 @@ def fetch_pricing() -> dict:
         return cached
 
     logger.info("Fetching fresh pricing data…")
-    anthropic    = scrape_anthropic()
-    google       = scrape_google()
-    openai_live  = fetch_openai_from_openrouter()
+    anthropic      = scrape_anthropic()
+    openrouter_all = _fetch_openrouter_all()
+    openai_live    = _openrouter_rows(openrouter_all, "openai/", "OpenAI", _openai_tier)
+    google_live    = _openrouter_rows(openrouter_all, "google/", "Google", _google_tier)
 
-    # Merge: prefer live/scraped, fall back per-provider
+    if openai_live:
+        logger.info(f"OpenRouter OpenAI fetch: got {len(openai_live)} models")
+    if google_live:
+        logger.info(f"OpenRouter Google fetch: got {len(google_live)} models")
+
+    # Merge: prefer live data, fall back per-provider
     anthropic = anthropic   or [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"]
-    google    = google      or [d for d in FALLBACK_DATA if d["provider"] == "Google"]
     openai    = openai_live or [d for d in FALLBACK_DATA if d["provider"] == "OpenAI"]
+    google    = google_live or [d for d in FALLBACK_DATA if d["provider"] == "Google"]
 
     models = anthropic + openai + google
     sources_used = {
         "Anthropic": "scraped" if anthropic and anthropic != [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"] else "fallback",
         "OpenAI":    "openrouter.ai/api/v1/models" if openai_live else "fallback",
-        "Google":    "scraped" if google and google != [d for d in FALLBACK_DATA if d["provider"] == "Google"] else "fallback",
+        "Google":    "openrouter.ai/api/v1/models" if google_live else "fallback",
     }
 
     payload = {
