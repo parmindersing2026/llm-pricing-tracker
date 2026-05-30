@@ -1,11 +1,10 @@
 """
 LLM Pricing Tracker — FastAPI backend
-Fetches pricing from official provider docs, caches for 7 days,
-falls back to hardcoded data if scraping fails.
+Fetches pricing from OpenRouter API for all providers, caches for 7 days,
+falls back to hardcoded data if the API is unreachable.
 """
 
 import json
-import os
 import time
 import logging
 from pathlib import Path
@@ -65,75 +64,13 @@ HEADERS = {
 }
 
 
-def _parse_price(text: str) -> float | None:
-    """Extract a float dollar amount from a string like '$3 / MTok' or '$1.50'."""
-    import re
-    m = re.search(r"\$\s*([\d,]+\.?\d*)", text.replace(",", ""))
-    if m:
-        try:
-            return float(m.group(1))
-        except ValueError:
-            pass
-    return None
-
-
-def scrape_anthropic() -> list[dict]:
-    """
-    Scrape Anthropic's pricing page.
-    The page is server-rendered markdown converted to HTML, so plain httpx works.
-    """
-    url = "https://platform.claude.com/docs/en/about-claude/pricing"
-    try:
-        with httpx.Client(timeout=20, headers=HEADERS, follow_redirects=True) as client:
-            r = client.get(url)
-            r.raise_for_status()
-        soup = BeautifulSoup(r.text, "html.parser")
-        # Find the pricing table — rows look like: Model | Base Input | ... | Output
-        rows = []
-        for table in soup.find_all("table"):
-            headers_row = table.find("tr")
-            if not headers_row:
-                continue
-            headers = [th.get_text(strip=True) for th in headers_row.find_all(["th", "td"])]
-            if "Model" not in headers and "model" not in [h.lower() for h in headers]:
-                continue
-            col_model  = next((i for i, h in enumerate(headers) if "model" in h.lower()), 0)
-            col_input  = next((i for i, h in enumerate(headers) if "input" in h.lower() and "base" in h.lower()), None)
-            col_output = next((i for i, h in enumerate(headers) if "output" in h.lower()), None)
-            if col_input is None or col_output is None:
-                # fallback: second col = input, last col = output
-                col_input  = 1
-                col_output = len(headers) - 1
-            for tr in table.find_all("tr")[1:]:
-                cells = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]
-                if len(cells) <= max(col_model, col_input, col_output):
-                    continue
-                model_name = cells[col_model]
-                inp  = _parse_price(cells[col_input])
-                out  = _parse_price(cells[col_output])
-                if not model_name or inp is None or out is None:
-                    continue
-                deprecated = "deprecated" in model_name.lower() or "deprecated" in cells[col_input].lower()
-                note = "Deprecated" if deprecated else ""
-                tier = (
-                    "flagship" if "opus" in model_name.lower() else
-                    "standard" if "sonnet" in model_name.lower() else
-                    "lite"
-                )
-                rows.append({
-                    "provider": "Anthropic",
-                    "model": model_name.replace(" (deprecated)", "").strip(),
-                    "tier": tier,
-                    "input": inp,
-                    "output": out,
-                    "note": note,
-                })
-        if rows:
-            logger.info(f"Anthropic scraper: got {len(rows)} models")
-            return rows
-    except Exception as e:
-        logger.warning(f"Anthropic scrape failed: {e}")
-    return []
+def _anthropic_tier(model_id: str) -> str:
+    slug = model_id.lower()
+    if "opus" in slug:
+        return "flagship"
+    if "sonnet" in slug:
+        return "standard"
+    return "lite"  # haiku, etc.
 
 
 def _fetch_openrouter_all() -> list[dict]:
@@ -226,26 +163,25 @@ def fetch_pricing() -> dict:
         return cached
 
     logger.info("Fetching fresh pricing data…")
-    anthropic      = scrape_anthropic()
-    openrouter_all = _fetch_openrouter_all()
-    openai_live    = _openrouter_rows(openrouter_all, "openai/", "OpenAI", _openai_tier)
-    google_live    = _openrouter_rows(openrouter_all, "google/", "Google", _google_tier)
+    openrouter_all   = _fetch_openrouter_all()
+    anthropic_live   = _openrouter_rows(openrouter_all, "anthropic/", "Anthropic", _anthropic_tier)
+    openai_live      = _openrouter_rows(openrouter_all, "openai/",    "OpenAI",    _openai_tier)
+    google_live      = _openrouter_rows(openrouter_all, "google/",    "Google",    _google_tier)
 
-    if openai_live:
-        logger.info(f"OpenRouter OpenAI fetch: got {len(openai_live)} models")
-    if google_live:
-        logger.info(f"OpenRouter Google fetch: got {len(google_live)} models")
+    for provider, rows in [("Anthropic", anthropic_live), ("OpenAI", openai_live), ("Google", google_live)]:
+        if rows:
+            logger.info(f"OpenRouter {provider} fetch: got {len(rows)} models")
 
     # Merge: prefer live data, fall back per-provider
-    anthropic = anthropic   or [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"]
-    openai    = openai_live or [d for d in FALLBACK_DATA if d["provider"] == "OpenAI"]
-    google    = google_live or [d for d in FALLBACK_DATA if d["provider"] == "Google"]
+    anthropic = anthropic_live or [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"]
+    openai    = openai_live    or [d for d in FALLBACK_DATA if d["provider"] == "OpenAI"]
+    google    = google_live    or [d for d in FALLBACK_DATA if d["provider"] == "Google"]
 
     models = anthropic + openai + google
     sources_used = {
-        "Anthropic": "scraped" if anthropic and anthropic != [d for d in FALLBACK_DATA if d["provider"] == "Anthropic"] else "fallback",
-        "OpenAI":    "openrouter.ai/api/v1/models" if openai_live else "fallback",
-        "Google":    "openrouter.ai/api/v1/models" if google_live else "fallback",
+        "Anthropic": "openrouter.ai/api/v1/models" if anthropic_live else "fallback",
+        "OpenAI":    "openrouter.ai/api/v1/models" if openai_live    else "fallback",
+        "Google":    "openrouter.ai/api/v1/models" if google_live    else "fallback",
     }
 
     payload = {
