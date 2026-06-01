@@ -5,288 +5,447 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LLM API Cost Impact — Summary</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f0f2f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: #f4f6f9;
     color: #1a1a2e;
+    min-height: 100vh;
   }
 
   /* ── Header ── */
   .header {
-    background: linear-gradient(120deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
-    color: white;
-    padding: 18px 40px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%);
+    padding: 24px 0;
+  }
+  .header-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 20px;
   }
-  .header h1 { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
-  .header-sub { font-size: 0.74rem; color: #8899bb; margin-top: 3px; }
-  .header-back { font-size: 0.74rem; color: #7eb3ff; text-decoration: none; font-weight: 500; }
-  .header-back:hover { text-decoration: underline; }
+  .header h1 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .header-sub {
+    font-size: 0.75rem;
+    color: #7a93bb;
+    margin-top: 4px;
+    letter-spacing: 0.01em;
+  }
+  .header-back {
+    font-size: 0.75rem;
+    color: #7eb3ff;
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0.85;
+    transition: opacity 0.15s;
+  }
+  .header-back:hover { opacity: 1; text-decoration: underline; }
 
-  /* ── Page ── */
-  .page { padding: 20px 60px 28px; }
+  /* ── Main container ── */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 36px 40px 48px;
+  }
+
+  /* ── Section label ── */
+  .section-eyebrow {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 14px;
+  }
 
   /* ── KPI strip ── */
   .kpi-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 14px;
+    margin-bottom: 40px;
   }
   .kpi {
-    background: white;
-    border: 1.5px solid #e4e8ef;
+    background: #fff;
+    border: 1px solid #e5e9f0;
     border-radius: 12px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
-  .kpi-icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; flex-shrink: 0;
+  .kpi-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin-bottom: 8px;
   }
-  .kpi-icon.green { background: #dcfce7; }
-  .kpi-icon.amber { background: #fef3c7; }
-  .kpi-icon.blue  { background: #dbeafe; }
-  .kpi-icon.rose  { background: #fee2e2; }
-  .kpi-value { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1; }
-  .kpi-label { font-size: 0.66rem; color: #888; margin-top: 2px; line-height: 1.3; }
+  .kpi-value {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .kpi-desc { font-size: 0.7rem; color: #9ca3af; line-height: 1.4; }
   .c-green { color: #16a34a; }
   .c-amber { color: #d97706; }
   .c-blue  { color: #2563eb; }
   .c-rose  { color: #dc2626; }
 
-  /* ── Allocation card ── */
-  .alloc-wrap { margin-bottom: 16px; }
-
-  .card {
-    background: white;
-    border: 1.5px solid #e4e8ef;
+  /* ── Allocation table card ── */
+  .alloc-card {
+    background: #fff;
+    border: 1px solid #e5e9f0;
     border-radius: 16px;
-    padding: 32px 40px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  }
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    overflow: hidden;
     margin-bottom: 28px;
   }
-  .card-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  .card-title { font-size: 1rem; font-weight: 700; color: #222; text-transform: uppercase; letter-spacing: 0.08em; }
-
-  /* ── Task allocation table ── */
-  .alloc-table { width: 100%; border-collapse: collapse; }
-  .alloc-table th {
-    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: #bbb; padding: 0 16px 14px 16px;
-    border-bottom: 2px solid #f0f2f5; text-align: left;
-  }
-  .alloc-table th:first-child { padding-left: 20px; }
-  .alloc-table td {
-    font-size: 1rem; color: #222; padding: 20px 16px;
-    border-bottom: 1px solid #f0f2f5; vertical-align: middle;
-    line-height: 1.5;
-  }
-  .alloc-table td:first-child { padding-left: 20px; border-left: 4px solid transparent; }
-  .alloc-table tr:last-child td { border-bottom: none; }
-  .row-lite td:first-child    { border-left-color: #22c55e; }
-  .row-standard td:first-child { border-left-color: #3b82f6; }
-  .row-reasoning td:first-child { border-left-color: #ef4444; }
-  .row-flagship td:first-child  { border-left-color: #f59e0b; }
-  .tier-pill {
-    display: inline-block; font-size: 0.82rem; font-weight: 700;
-    padding: 6px 16px; border-radius: 12px; white-space: nowrap;
-  }
-  .t-lite      { background: #dcfce7; color: #15803d; }
-  .t-standard  { background: #dbeafe; color: #1d4ed8; }
-  .t-flagship  { background: #fff3cd; color: #92400e; }
-  .t-reasoning { background: #fee2e2; color: #b91c1c; }
-  .saving-pill {
-    display: inline-block; font-size: 0.88rem; font-weight: 700;
-    padding: 6px 16px; border-radius: 12px; background: #f0fdf4; color: #16a34a;
-    white-space: nowrap;
-  }
-  .saving-pill.none { background: #fef9ec; color: #b45309; }
-  .model-hint { font-size: 0.84rem; color: #aaa; margin-top: 5px; }
-
-  /* ── Bottom callout ── */
-  .callout-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
+  .alloc-card-header {
+    padding: 22px 32px 18px;
+    border-bottom: 1px solid #f0f2f6;
+    display: flex;
+    align-items: baseline;
     gap: 12px;
   }
-  .callout-main {
-    background: white;
-    border: 1.5px solid #e4e8ef;
+  .alloc-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.01em;
+  }
+  .alloc-card-sub {
+    font-size: 0.75rem;
+    color: #9ca3af;
+  }
+
+  /* ── Table ── */
+  .alloc-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .alloc-table thead tr {
+    background: #f8f9fc;
+  }
+  .alloc-table th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #9ca3af;
+    padding: 12px 20px;
+    text-align: left;
+    border-bottom: 1px solid #eef0f6;
+  }
+  .alloc-table td {
+    padding: 20px 20px;
+    border-bottom: 1px solid #f3f4f8;
+    vertical-align: middle;
+  }
+  .alloc-table tbody tr:last-child td { border-bottom: none; }
+  .alloc-table tbody tr:hover { background: #fafbfd; }
+
+  /* tier accent strip */
+  .alloc-table td.task-cell {
+    border-left: 3px solid transparent;
+    padding-left: 20px;
+  }
+  .row-lite      .task-cell { border-left-color: #22c55e; }
+  .row-standard  .task-cell { border-left-color: #3b82f6; }
+  .row-reasoning .task-cell { border-left-color: #ef4444; }
+  .row-flagship  .task-cell { border-left-color: #f59e0b; }
+
+  .task-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .task-examples {
+    font-size: 0.78rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  .model-hint {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    margin-top: 5px;
+    font-style: italic;
+  }
+
+  .tier-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 5px 13px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .t-lite      { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .t-standard  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .t-flagship  { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .t-reasoning { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+  .cost-value {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .cost-per { font-size: 0.68rem; color: #9ca3af; font-weight: 400; display: block; margin-top: 2px; }
+
+  .saving-pill {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 5px 13px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .s-high { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .s-mid  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .s-base { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+  /* ── Callout strip ── */
+  .callout-strip {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 14px;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e9f0;
     border-left: 4px solid #16a34a;
     border-radius: 12px;
-    padding: 14px 18px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 28px;
   }
-  .callout-head { font-size: 0.65rem; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; }
-  .callout-body { font-size: 0.75rem; color: #555; line-height: 1.55; }
-  .callout-body strong { color: #1a1a2e; }
-
-  .stat-card {
-    background: white; border: 1.5px solid #e4e8ef; border-radius: 12px;
-    padding: 14px 12px; text-align: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  .callout-text { }
+  .callout-head {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #16a34a;
+    margin-bottom: 5px;
   }
-  .stat-big { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; color: #16a34a; line-height: 1; }
-  .stat-lbl { font-size: 0.63rem; color: #999; line-height: 1.35; }
+  .callout-body {
+    font-size: 0.82rem;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+  .callout-body strong { color: #111827; font-weight: 700; }
 
-  .footer { margin-top: 14px; font-size: 0.65rem; color: #bbb; text-align: center; }
+  .stat-block {
+    text-align: center;
+    padding: 0 20px;
+    border-left: 1px solid #f0f2f6;
+  }
+  .stat-num {
+    font-size: 1.75rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: #16a34a;
+    line-height: 1;
+  }
+  .stat-lbl {
+    font-size: 0.65rem;
+    color: #9ca3af;
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    font-size: 0.68rem;
+    color: #9ca3af;
+    text-align: center;
+    padding-top: 4px;
+  }
   .footer a { color: #4a6cf7; text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
 
-  @media (max-width: 960px) {
-    .page { padding: 14px 16px 20px; }
-    .header { padding: 14px 16px; }
+  @media (max-width: 800px) {
+    .container { padding: 24px 20px 36px; }
+    .header-inner { padding: 0 20px; }
     .kpi-row { grid-template-columns: 1fr 1fr; }
-    .main-grid { grid-template-columns: 1fr; }
-    .callout-row { grid-template-columns: 1fr 1fr; }
+    .callout-strip { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
-  <div>
-    <h1>🤖 LLM API Cost Impact &amp; Model Allocation</h1>
-    <div class="header-sub">Per-million-token pricing · Anthropic · OpenAI · Google · June 2026</div>
+  <div class="header-inner">
+    <div>
+      <h1>LLM API Cost Impact &amp; Model Selection</h1>
+      <div class="header-sub">Per-million-token pricing · Anthropic · OpenAI · Google · June 2026</div>
+    </div>
+    <a class="header-back" href="/">← Back to tracker</a>
   </div>
-  <a class="header-back" href="/">← Back to tracker</a>
 </div>
 
-<div class="page">
+<div class="container">
 
   <!-- KPIs -->
+  <div class="section-eyebrow">At a glance</div>
   <div class="kpi-row">
     <div class="kpi">
-      <div class="kpi-icon green">💚</div>
-      <div>
-        <div class="kpi-value c-green">$0.15</div>
-        <div class="kpi-label">Cheapest input/1M<br>GPT-4o mini</div>
-      </div>
+      <div class="kpi-label">Cheapest input / 1M</div>
+      <div class="kpi-value c-green">$0.15</div>
+      <div class="kpi-desc">GPT-4o mini</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon amber">🔶</div>
-      <div>
-        <div class="kpi-value c-amber">$15.00</div>
-        <div class="kpi-label">Priciest input/1M<br>Claude Opus 4.1 (legacy)</div>
-      </div>
+      <div class="kpi-label">Priciest input / 1M</div>
+      <div class="kpi-value c-amber">$15.00</div>
+      <div class="kpi-desc">Claude Opus 4.1 (legacy)</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon blue">📊</div>
-      <div>
-        <div class="kpi-value c-blue">100×</div>
-        <div class="kpi-label">Price spread<br>cheapest → dearest</div>
-      </div>
+      <div class="kpi-label">Price spread</div>
+      <div class="kpi-value c-blue">100×</div>
+      <div class="kpi-desc">Cheapest → dearest</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon rose">⚡</div>
-      <div>
-        <div class="kpi-value c-rose">3–5×</div>
-        <div class="kpi-label">Output multiplier<br>vs input price</div>
-      </div>
+      <div class="kpi-label">Output multiplier</div>
+      <div class="kpi-value c-rose">3–5×</div>
+      <div class="kpi-desc">vs input price, per model</div>
     </div>
   </div>
 
-  <!-- Task allocation — primary -->
-  <div class="alloc-wrap">
-    <div class="card">
-      <div class="card-header">
-        <div class="card-dot" style="background:#a78bfa"></div>
-        <span class="card-title">Right-size by task / agent</span>
-      </div>
-      <table class="alloc-table">
-        <thead>
-          <tr>
-            <th>Task / Agent type</th>
-            <th>Tier</th>
-            <th>Input</th>
-            <th>Saving</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="row-lite">
-            <td>
-              Classification, intent routing, data extraction, tagging, form parsing
-              <div class="model-hint">GPT-4o mini · Claude Haiku 4.5 · Gemini Flash-Lite</div>
-            </td>
-            <td><span class="tier-pill t-lite">Lite</span></td>
-            <td style="font-weight:800;font-size:1.05rem;color:#16a34a">$0.15–1</td>
-            <td><span class="saving-pill">Up to 97% cheaper</span></td>
-          </tr>
-          <tr class="row-standard">
-            <td>
-              Document summarisation, Q&amp;A, customer support, code assist, RAG pipelines
-              <div class="model-hint">GPT-4.1 · GPT-4o · Claude Sonnet 4.x · Gemini 3.5 Flash</div>
-            </td>
-            <td><span class="tier-pill t-standard">Standard</span></td>
-            <td style="font-weight:800;font-size:1.05rem;color:#2563eb">$2.00–3</td>
-            <td><span class="saving-pill">40–60% cheaper</span></td>
-          </tr>
-          <tr class="row-reasoning">
-            <td>
-              Agentic workflows, multi-step planning, chain-of-thought, tool-use orchestration
-              <div class="model-hint">o3 · o4-mini · Gemini Flash (thinking)</div>
-            </td>
-            <td><span class="tier-pill t-reasoning">Reasoning</span></td>
-            <td style="font-weight:800;font-size:1.05rem;color:#dc2626">$1.10–2</td>
-            <td><span class="saving-pill">60–78% cheaper</span></td>
-          </tr>
-          <tr class="row-flagship">
-            <td>
-              Complex strategy, legal/compliance analysis, nuanced long-form generation, high-stakes decisions
-              <div class="model-hint">Claude Opus 4.x · Gemini 3.1 Pro</div>
-            </td>
-            <td><span class="tier-pill t-flagship">Flagship</span></td>
-            <td style="font-weight:800;font-size:1.05rem;color:#d97706">$5.00</td>
-            <td><span class="saving-pill none">Baseline</span></td>
-          </tr>
-        </tbody>
-      </table>
+  <!-- Allocation table -->
+  <div class="section-eyebrow">Right-size by task / agent type</div>
+  <div class="alloc-card">
+    <div class="alloc-card-header">
+      <span class="alloc-card-title">Model Selection Guide</span>
+      <span class="alloc-card-sub">Match task complexity to model tier to avoid unnecessary spend</span>
     </div>
+    <table class="alloc-table">
+      <thead>
+        <tr>
+          <th style="width:40%">Task / Agent Type</th>
+          <th style="width:14%">Tier</th>
+          <th style="width:16%">Input Cost</th>
+          <th style="width:16%">Output Cost</th>
+          <th style="width:14%">vs Flagship</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-lite">
+          <td class="task-cell">
+            <div class="task-name">Classification, Routing &amp; Extraction</div>
+            <div class="task-examples">Intent detection, data tagging, form parsing, document triage</div>
+            <div class="model-hint">GPT-4o mini · Claude Haiku 4.5 · Gemini Flash-Lite</div>
+          </td>
+          <td><span class="tier-pill t-lite">Lite</span></td>
+          <td>
+            <span class="cost-value c-green">$0.15–1</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td>
+            <span class="cost-value c-green">$0.60–5</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td><span class="saving-pill s-high">Up to 97% off</span></td>
+        </tr>
+        <tr class="row-standard">
+          <td class="task-cell">
+            <div class="task-name">Summarisation, Q&amp;A &amp; Code Assist</div>
+            <div class="task-examples">Document summarisation, customer support, RAG pipelines, code review</div>
+            <div class="model-hint">GPT-4.1 · GPT-4o · Claude Sonnet 4.x · Gemini 3.5 Flash</div>
+          </td>
+          <td><span class="tier-pill t-standard">Standard</span></td>
+          <td>
+            <span class="cost-value c-blue">$2–3</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td>
+            <span class="cost-value c-blue">$8–15</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td><span class="saving-pill s-mid">40–60% off</span></td>
+        </tr>
+        <tr class="row-reasoning">
+          <td class="task-cell">
+            <div class="task-name">Agentic Workflows &amp; Multi-step Planning</div>
+            <div class="task-examples">Tool-use orchestration, chain-of-thought, autonomous agents, research tasks</div>
+            <div class="model-hint">o3 · o4-mini · Gemini Flash (thinking)</div>
+          </td>
+          <td><span class="tier-pill t-reasoning">Reasoning</span></td>
+          <td>
+            <span class="cost-value c-rose">$1.10–2</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td>
+            <span class="cost-value c-rose">$4–8</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td><span class="saving-pill s-mid">60–78% off</span></td>
+        </tr>
+        <tr class="row-flagship">
+          <td class="task-cell">
+            <div class="task-name">Complex Strategy &amp; High-Stakes Generation</div>
+            <div class="task-examples">Legal/compliance analysis, executive briefings, nuanced long-form writing</div>
+            <div class="model-hint">Claude Opus 4.x · Gemini 3.1 Pro</div>
+          </td>
+          <td><span class="tier-pill t-flagship">Flagship</span></td>
+          <td>
+            <span class="cost-value c-amber">$5.00</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td>
+            <span class="cost-value c-amber">$25.00</span>
+            <span class="cost-per">per 1M tokens</span>
+          </td>
+          <td><span class="saving-pill s-base">Baseline</span></td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-
 
   <!-- Callout -->
-  <div class="callout-row">
-    <div class="callout-main">
+  <div class="callout-strip">
+    <div class="callout-text">
       <div class="callout-head">Cost optimisation opportunity</div>
       <div class="callout-body">
-        Routing <strong>80% of tasks</strong> to Lite/Standard models and reserving Flagship only for
-        complex work yields a <strong>5–33× input cost reduction</strong>. At 100M tokens/month that's
-        up to <strong>$4,850 saved</strong> — output savings scale on top at 3–5×.
+        Routing <strong>80% of tasks</strong> to Lite or Standard models — reserving Flagship only for genuinely complex work —
+        yields a <strong>5–33× reduction in input cost</strong>. Output savings scale on top at 3–5×.
       </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-big">33×</div>
+    <div class="stat-block">
+      <div class="stat-num">33×</div>
       <div class="stat-lbl">max cost<br>reduction</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-big">$4.8k</div>
+    <div class="stat-block">
+      <div class="stat-num">$4.8k</div>
       <div class="stat-lbl">saved / month<br>@ 100M tokens</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-big">80%</div>
+    <div class="stat-block">
+      <div class="stat-num">80%</div>
       <div class="stat-lbl">of tasks suit<br>Lite / Standard</div>
     </div>
   </div>
 
-  <p class="footer">
-    Prices per 1M tokens (USD) · Source: <a href="https://openrouter.ai/api/v1/models" target="_blank">OpenRouter API</a> · Refreshes every 7 days · <a href="/api/pricing">Raw JSON</a>
-  </p>
+  <div class="footer">
+    Prices per 1M tokens (USD) &nbsp;·&nbsp;
+    Source: <a href="https://openrouter.ai/api/v1/models" target="_blank">OpenRouter API</a> &nbsp;·&nbsp;
+    Refreshes every 7 days &nbsp;·&nbsp;
+    <a href="/api/pricing">Raw JSON</a>
+  </div>
 
 </div>
 </body>
