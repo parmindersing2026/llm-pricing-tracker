@@ -64,87 +64,53 @@
   .c-blue  { color: #2563eb; }
   .c-rose  { color: #dc2626; }
 
-  /* ── Allocation (full-width) ── */
+  /* ── Allocation card ── */
   .alloc-wrap { margin-bottom: 14px; }
-
-  /* ── Bar charts row ── */
-  .main-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
 
   .card {
     background: white;
     border: 1.5px solid #e4e8ef;
     border-radius: 14px;
-    padding: 18px 20px;
+    padding: 24px 28px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   }
   .card-header {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 20px;
   }
-  .card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .card-title {
-    font-size: 0.72rem; font-weight: 700; color: #333;
-    text-transform: uppercase; letter-spacing: 0.07em;
-  }
-  .card-badge {
-    margin-left: auto; font-size: 0.6rem; font-weight: 600;
-    padding: 2px 8px; border-radius: 20px; background: #f0f2f5; color: #999;
-  }
-
-  /* bars */
-  .bar-section { margin-bottom: 12px; }
-  .bar-section:last-child { margin-bottom: 0; }
-  .bar-section-label {
-    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.09em; color: #ccc; margin-bottom: 6px;
-    padding-bottom: 3px; border-bottom: 1px solid #f0f2f5;
-  }
-  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .bar-row:last-child { margin-bottom: 0; }
-  .bar-label { font-size: 0.68rem; color: #555; width: 118px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bar-track { flex: 1; background: #f0f2f5; border-radius: 4px; height: 9px; overflow: hidden; }
-  .bar-fill  { height: 9px; border-radius: 4px; }
-  .bar-val   { font-size: 0.68rem; font-weight: 700; width: 44px; text-align: right; flex-shrink: 0; }
-
-  .fill-anthropic { background: linear-gradient(90deg, #b56429, #e8964a); }
-  .fill-openai    { background: linear-gradient(90deg, #0d8a6a, #22c55e); }
-  .fill-google    { background: linear-gradient(90deg, #2a6fd4, #60a5fa); }
+  .card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .card-title { font-size: 0.85rem; font-weight: 700; color: #333; text-transform: uppercase; letter-spacing: 0.07em; }
 
   /* ── Task allocation table ── */
   .alloc-table { width: 100%; border-collapse: collapse; }
   .alloc-table th {
-    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: #aaa; padding: 0 8px 8px 0;
-    border-bottom: 1.5px solid #f0f2f5; text-align: left;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #aaa; padding: 0 12px 12px 0;
+    border-bottom: 2px solid #f0f2f5; text-align: left;
   }
   .alloc-table td {
-    font-size: 0.71rem; color: #444; padding: 8px 8px 8px 0;
-    border-bottom: 1px solid #f7f8fa; vertical-align: middle;
-    line-height: 1.35;
+    font-size: 0.88rem; color: #333; padding: 14px 12px 14px 0;
+    border-bottom: 1px solid #f0f2f5; vertical-align: middle;
+    line-height: 1.45;
   }
   .alloc-table tr:last-child td { border-bottom: none; }
   .tier-pill {
-    display: inline-block; font-size: 0.58rem; font-weight: 700;
-    padding: 2px 7px; border-radius: 8px; white-space: nowrap;
+    display: inline-block; font-size: 0.72rem; font-weight: 700;
+    padding: 4px 12px; border-radius: 10px; white-space: nowrap;
   }
   .t-lite      { background: #dcfce7; color: #15803d; }
   .t-standard  { background: #dbeafe; color: #1d4ed8; }
   .t-flagship  { background: #fff3cd; color: #92400e; }
   .t-reasoning { background: #fee2e2; color: #b91c1c; }
   .saving-pill {
-    display: inline-block; font-size: 0.62rem; font-weight: 700;
-    padding: 2px 7px; border-radius: 8px; background: #f0fdf4; color: #16a34a;
+    display: inline-block; font-size: 0.78rem; font-weight: 700;
+    padding: 4px 12px; border-radius: 10px; background: #f0fdf4; color: #16a34a;
     white-space: nowrap;
   }
   .saving-pill.none { background: #fef9ec; color: #b45309; }
-  .model-hint { font-size: 0.62rem; color: #999; margin-top: 1px; }
+  .model-hint { font-size: 0.76rem; color: #999; margin-top: 3px; }
 
   /* ── Bottom callout ── */
   .callout-row {
@@ -248,38 +214,38 @@
         <tbody>
           <tr>
             <td>
-              Classification, routing,<br>data extraction, tagging
-              <div class="model-hint">GPT-4o mini · Haiku · Flash-Lite</div>
+              Classification, intent routing, data extraction, tagging, form parsing
+              <div class="model-hint">GPT-4o mini · Claude Haiku 4.5 · Gemini Flash-Lite</div>
             </td>
             <td><span class="tier-pill t-lite">Lite</span></td>
-            <td style="font-weight:700;color:#16a34a">$0.15–1</td>
-            <td><span class="saving-pill">97% cheaper</span></td>
+            <td style="font-weight:700;font-size:0.95rem;color:#16a34a">$0.15–1</td>
+            <td><span class="saving-pill">Up to 97% cheaper</span></td>
           </tr>
           <tr>
             <td>
-              Summarisation, Q&amp;A,<br>code assist, RAG agents
-              <div class="model-hint">GPT-4.1 · GPT-4o · Sonnet</div>
+              Document summarisation, Q&amp;A, customer support, code assist, RAG pipelines
+              <div class="model-hint">GPT-4.1 · GPT-4o · Claude Sonnet 4.x · Gemini 3.5 Flash</div>
             </td>
             <td><span class="tier-pill t-standard">Standard</span></td>
-            <td style="font-weight:700;color:#2563eb">$2.00–3</td>
+            <td style="font-weight:700;font-size:0.95rem;color:#2563eb">$2.00–3</td>
             <td><span class="saving-pill">40–60% cheaper</span></td>
           </tr>
           <tr>
             <td>
-              Multi-step agents,<br>chain-of-thought, planning
-              <div class="model-hint">o3 · o4-mini · Gemini Flash</div>
+              Agentic workflows, multi-step planning, chain-of-thought, tool-use orchestration
+              <div class="model-hint">o3 · o4-mini · Gemini Flash (thinking)</div>
             </td>
             <td><span class="tier-pill t-reasoning">Reasoning</span></td>
-            <td style="font-weight:700;color:#dc2626">$1.10–2</td>
+            <td style="font-weight:700;font-size:0.95rem;color:#dc2626">$1.10–2</td>
             <td><span class="saving-pill">60–78% cheaper</span></td>
           </tr>
           <tr>
             <td>
-              Complex strategy, legal,<br>nuanced long-form generation
-              <div class="model-hint">Claude Opus · Gemini Pro</div>
+              Complex strategy, legal/compliance analysis, nuanced long-form generation, high-stakes decisions
+              <div class="model-hint">Claude Opus 4.x · Gemini 3.1 Pro</div>
             </td>
             <td><span class="tier-pill t-flagship">Flagship</span></td>
-            <td style="font-weight:700;color:#d97706">$5.00</td>
+            <td style="font-weight:700;font-size:0.95rem;color:#d97706">$5.00</td>
             <td><span class="saving-pill none">Baseline</span></td>
           </tr>
         </tbody>
@@ -287,136 +253,6 @@
     </div>
   </div>
 
-  <!-- Bar charts — supporting detail -->
-  <div class="main-grid">
-
-    <!-- Input bars -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-dot" style="background:#e8964a"></div>
-        <span class="card-title">Input $/1M tokens</span>
-        <span class="card-badge">max $15</span>
-      </div>
-      <div class="bar-section">
-        <div class="bar-section-label">Anthropic</div>
-        <div class="bar-row">
-          <span class="bar-label">Claude Opus 4.x</span>
-          <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:33.3%"></div></div>
-          <span class="bar-val" style="color:#c47b3a">$5.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Claude Sonnet 4.x</span>
-          <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:20%"></div></div>
-          <span class="bar-val" style="color:#c47b3a">$3.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Claude Haiku 4.5</span>
-          <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:6.7%"></div></div>
-          <span class="bar-val" style="color:#c47b3a">$1.00</span>
-        </div>
-      </div>
-      <div class="bar-section">
-        <div class="bar-section-label">OpenAI</div>
-        <div class="bar-row">
-          <span class="bar-label">GPT-4o</span>
-          <div class="bar-track"><div class="bar-fill fill-openai" style="width:16.7%"></div></div>
-          <span class="bar-val" style="color:#10a37f">$2.50</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">GPT-4.1</span>
-          <div class="bar-track"><div class="bar-fill fill-openai" style="width:13.3%"></div></div>
-          <span class="bar-val" style="color:#10a37f">$2.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">GPT-4o mini</span>
-          <div class="bar-track"><div class="bar-fill fill-openai" style="width:1%"></div></div>
-          <span class="bar-val" style="color:#10a37f">$0.15</span>
-        </div>
-      </div>
-      <div class="bar-section">
-        <div class="bar-section-label">Google</div>
-        <div class="bar-row">
-          <span class="bar-label">Gemini 3.1 Pro</span>
-          <div class="bar-track"><div class="bar-fill fill-google" style="width:13.3%"></div></div>
-          <span class="bar-val" style="color:#4285f4">$2.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Gemini 3.5 Flash</span>
-          <div class="bar-track"><div class="bar-fill fill-google" style="width:10%"></div></div>
-          <span class="bar-val" style="color:#4285f4">$1.50</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Gemini Flash-Lite</span>
-          <div class="bar-track"><div class="bar-fill fill-google" style="width:1.7%"></div></div>
-          <span class="bar-val" style="color:#4285f4">$0.25</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Output bars -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-dot" style="background:#60a5fa"></div>
-        <span class="card-title">Output $/1M tokens</span>
-        <span class="card-badge">max $25</span>
-      </div>
-      <div class="bar-section">
-        <div class="bar-section-label">Anthropic</div>
-        <div class="bar-row">
-          <span class="bar-label">Claude Opus 4.x</span>
-          <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:100%"></div></div>
-          <span class="bar-val" style="color:#c47b3a">$25.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Claude Sonnet 4.x</span>
-          <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:60%"></div></div>
-          <span class="bar-val" style="color:#c47b3a">$15.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Claude Haiku 4.5</span>
-          <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:20%"></div></div>
-          <span class="bar-val" style="color:#c47b3a">$5.00</span>
-        </div>
-      </div>
-      <div class="bar-section">
-        <div class="bar-section-label">OpenAI</div>
-        <div class="bar-row">
-          <span class="bar-label">GPT-4o</span>
-          <div class="bar-track"><div class="bar-fill fill-openai" style="width:40%"></div></div>
-          <span class="bar-val" style="color:#10a37f">$10.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">GPT-4.1</span>
-          <div class="bar-track"><div class="bar-fill fill-openai" style="width:32%"></div></div>
-          <span class="bar-val" style="color:#10a37f">$8.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">GPT-4o mini</span>
-          <div class="bar-track"><div class="bar-fill fill-openai" style="width:2.4%"></div></div>
-          <span class="bar-val" style="color:#10a37f">$0.60</span>
-        </div>
-      </div>
-      <div class="bar-section">
-        <div class="bar-section-label">Google</div>
-        <div class="bar-row">
-          <span class="bar-label">Gemini 3.1 Pro</span>
-          <div class="bar-track"><div class="bar-fill fill-google" style="width:48%"></div></div>
-          <span class="bar-val" style="color:#4285f4">$12.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Gemini 3.5 Flash</span>
-          <div class="bar-track"><div class="bar-fill fill-google" style="width:36%"></div></div>
-          <span class="bar-val" style="color:#4285f4">$9.00</span>
-        </div>
-        <div class="bar-row">
-          <span class="bar-label">Gemini Flash-Lite</span>
-          <div class="bar-track"><div class="bar-fill fill-google" style="width:6%"></div></div>
-          <span class="bar-val" style="color:#4285f4">$1.50</span>
-        </div>
-      </div>
-    </div>
-
-  </div>
 
   <!-- Callout -->
   <div class="callout-row">
