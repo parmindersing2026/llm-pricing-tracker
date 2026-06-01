@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM API Cost Impact — Summary</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f1117;
+    color: #e8eaf0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .subtitle {
+    font-size: 0.82rem;
+    color: #778;
+    text-align: center;
+    margin-bottom: 36px;
+  }
+
+  /* ── KPI row ── */
+  .kpi-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 920px;
+  }
+  .kpi {
+    flex: 1;
+    min-width: 160px;
+    background: #1a1d27;
+    border: 1.5px solid #2a2d3a;
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi-label { font-size: 0.74rem; color: #778; text-transform: uppercase; letter-spacing: 0.06em; }
+  .green { color: #34d399; }
+  .amber { color: #fbbf24; }
+  .blue  { color: #60a5fa; }
+  .rose  { color: #fb7185; }
+
+  /* ── Chart grid ── */
+  .charts { display: flex; gap: 24px; width: 100%; max-width: 920px; flex-wrap: wrap; }
+
+  .chart-card {
+    flex: 1;
+    min-width: 260px;
+    background: #1a1d27;
+    border: 1.5px solid #2a2d3a;
+    border-radius: 14px;
+    padding: 20px 22px;
+  }
+  .chart-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #aab;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 18px;
+  }
+
+  /* bar chart */
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .bar-label { font-size: 0.73rem; color: #aab; width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; background: #242736; border-radius: 4px; height: 10px; }
+  .bar-fill  { height: 10px; border-radius: 4px; transition: width 0.4s ease; }
+  .bar-val   { font-size: 0.72rem; font-weight: 700; width: 48px; text-align: right; flex-shrink: 0; }
+
+  .fill-anthropic { background: linear-gradient(90deg, #c47b3a, #e8964a); }
+  .fill-openai    { background: linear-gradient(90deg, #10a37f, #34d399); }
+  .fill-google    { background: linear-gradient(90deg, #4285f4, #60a5fa); }
+
+  /* scatter / bubble table */
+  .bubble-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .bubble-cell {
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    background: #242736;
+  }
+  .bubble-provider { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .bubble-model    { font-size: 0.65rem; color: #99a; margin-bottom: 6px; line-height: 1.3; }
+  .bubble-inp      { font-size: 0.78rem; font-weight: 700; }
+  .bubble-out      { font-size: 0.7rem; color: #aab; }
+  .bubble-tier     { font-size: 0.58rem; margin-top: 4px; padding: 1px 6px; border-radius: 6px; display: inline-block; }
+  .t-flagship  { background: #3d2e00; color: #fbbf24; }
+  .t-standard  { background: #1e2a4a; color: #60a5fa; }
+  .t-lite      { background: #0d2e1a; color: #34d399; }
+  .t-reasoning { background: #2a1a1a; color: #fb7185; }
+
+  /* savings callout */
+  .callout {
+    width: 100%;
+    max-width: 920px;
+    margin-top: 24px;
+    background: #111827;
+    border: 1.5px solid #1f2a3a;
+    border-left: 4px solid #34d399;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .callout-head { font-size: 0.78rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .callout-body { font-size: 0.8rem; color: #aab; line-height: 1.55; }
+  .callout-stat { text-align: center; }
+  .callout-stat .big { font-size: 1.7rem; font-weight: 800; color: #34d399; }
+  .callout-stat .lbl { font-size: 0.68rem; color: #667; }
+
+  .footer {
+    margin-top: 28px;
+    font-size: 0.68rem;
+    color: #445;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>LLM API Cost Impact</h1>
+<p class="subtitle">Per-million-token pricing across Anthropic · OpenAI · Google — June 2026</p>
+
+<!-- KPIs -->
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="kpi-value green">$0.15</div>
+    <div class="kpi-label">Cheapest Input<br>(GPT-4o mini)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value amber">$15.00</div>
+    <div class="kpi-label">Priciest Input<br>(Claude Opus 4.1)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value blue">100×</div>
+    <div class="kpi-label">Input price spread<br>cheapest → dearest</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-value rose">3–5×</div>
+    <div class="kpi-label">Typical output<br>multiplier vs input</div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="charts">
+
+  <!-- Bar chart: Input cost by model -->
+  <div class="chart-card" style="flex:1.4">
+    <div class="chart-title">Input cost $/1M tokens — flagship &amp; standard models</div>
+
+    <!-- Anthropic -->
+    <div class="bar-row">
+      <span class="bar-label" style="color:#e8964a">Claude Opus 4.x</span>
+      <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:33%"></div></div>
+      <span class="bar-val" style="color:#e8964a">$5.00</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label" style="color:#e8964a">Claude Sonnet 4.x</span>
+      <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:20%"></div></div>
+      <span class="bar-val" style="color:#e8964a">$3.00</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label" style="color:#e8964a">Claude Haiku 4.5</span>
+      <div class="bar-track"><div class="bar-fill fill-anthropic" style="width:6.7%"></div></div>
+      <span class="bar-val" style="color:#e8964a">$1.00</span>
+    </div>
+
+    <!-- OpenAI -->
+    <div class="bar-row" style="margin-top:8px">
+      <span class="bar-label" style="color:#34d399">GPT-4o</span>
+      <div class="bar-track"><div class="bar-fill fill-openai" style="width:16.7%"></div></div>
+      <span class="bar-val" style="color:#34d399">$2.50</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label" style="color:#34d399">GPT-4.1</span>
+      <div class="bar-track"><div class="bar-fill fill-openai" style="width:13.3%"></div></div>
+      <span class="bar-val" style="color:#34d399">$2.00</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label" style="color:#34d399">GPT-4o mini</span>
+      <div class="bar-track"><div class="bar-fill fill-openai" style="width:1%"></div></div>
+      <span class="bar-val" style="color:#34d399">$0.15</span>
+    </div>
+
+    <!-- Google -->
+    <div class="bar-row" style="margin-top:8px">
+      <span class="bar-label" style="color:#60a5fa">Gemini 3.5 Flash</span>
+      <div class="bar-track"><div class="bar-fill fill-google" style="width:10%"></div></div>
+      <span class="bar-val" style="color:#60a5fa">$1.50</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label" style="color:#60a5fa">Gemini 3.1 Pro</span>
+      <div class="bar-track"><div class="bar-fill fill-google" style="width:13.3%"></div></div>
+      <span class="bar-val" style="color:#60a5fa">$2.00</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label" style="color:#60a5fa">Gemini Flash-Lite</span>
+      <div class="bar-track"><div class="bar-fill fill-google" style="width:1.7%"></div></div>
+      <span class="bar-val" style="color:#60a5fa">$0.25</span>
+    </div>
+  </div>
+
+  <!-- Per-tier bubble grid -->
+  <div class="chart-card" style="flex:1">
+    <div class="chart-title">Input / Output per tier ($/1M)</div>
+    <div class="bubble-grid">
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#e8964a">Anthropic</div>
+        <div class="bubble-model">Opus 4.x</div>
+        <div class="bubble-inp green">$5.00</div>
+        <div class="bubble-out">→ $25.00</div>
+        <span class="bubble-tier t-flagship">Flagship</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#34d399">OpenAI</div>
+        <div class="bubble-model">GPT-4o</div>
+        <div class="bubble-inp green">$2.50</div>
+        <div class="bubble-out">→ $10.00</div>
+        <span class="bubble-tier t-standard">Standard</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#60a5fa">Google</div>
+        <div class="bubble-model">Gemini 3.1 Pro</div>
+        <div class="bubble-inp green">$2.00</div>
+        <div class="bubble-out">→ $12.00</div>
+        <span class="bubble-tier t-flagship">Flagship</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#e8964a">Anthropic</div>
+        <div class="bubble-model">Sonnet 4.x</div>
+        <div class="bubble-inp blue">$3.00</div>
+        <div class="bubble-out">→ $15.00</div>
+        <span class="bubble-tier t-standard">Standard</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#34d399">OpenAI</div>
+        <div class="bubble-model">o3 / o4-mini</div>
+        <div class="bubble-inp blue">$1.10–2</div>
+        <div class="bubble-out">→ $4–8</div>
+        <span class="bubble-tier t-reasoning">Reasoning</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#60a5fa">Google</div>
+        <div class="bubble-model">Gemini Flash</div>
+        <div class="bubble-inp green">$1.50</div>
+        <div class="bubble-out">→ $9.00</div>
+        <span class="bubble-tier t-standard">Standard</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#e8964a">Anthropic</div>
+        <div class="bubble-model">Haiku 4.5</div>
+        <div class="bubble-inp" style="color:#34d399">$1.00</div>
+        <div class="bubble-out">→ $5.00</div>
+        <span class="bubble-tier t-lite">Lite</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#34d399">OpenAI</div>
+        <div class="bubble-model">GPT-4o mini</div>
+        <div class="bubble-inp" style="color:#34d399">$0.15</div>
+        <div class="bubble-out">→ $0.60</div>
+        <span class="bubble-tier t-lite">Lite</span>
+      </div>
+
+      <div class="bubble-cell">
+        <div class="bubble-provider" style="color:#60a5fa">Google</div>
+        <div class="bubble-model">Flash-Lite</div>
+        <div class="bubble-inp" style="color:#34d399">$0.25</div>
+        <div class="bubble-out">→ $1.50</div>
+        <span class="bubble-tier t-lite">Lite</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Savings callout -->
+<div class="callout">
+  <div style="flex:1; min-width:260px">
+    <div class="callout-head">Cost optimisation opportunity</div>
+    <div class="callout-body">
+      Switching from a <strong>flagship</strong> model ($5/1M input) to a <strong>lite</strong> model ($0.15–$1/1M input)
+      for suitable tasks yields <strong>5–33× reduction in input cost</strong>.
+      At 100M tokens/month input, that's a saving of up to <strong>$4,850/month</strong>
+      before output tokens are counted.
+    </div>
+  </div>
+  <div class="callout-stat">
+    <div class="big">33×</div>
+    <div class="lbl">max input cost<br>reduction</div>
+  </div>
+  <div class="callout-stat">
+    <div class="big">$4.8k</div>
+    <div class="lbl">saved/month<br>@ 100M tok</div>
+  </div>
+  <div class="callout-stat">
+    <div class="big">5×</div>
+    <div class="lbl">typical output<br>multiplier</div>
+  </div>
+</div>
+
+<p class="footer">Prices per 1 million tokens (USD) · Source: OpenRouter API · Data refreshes every 7 days · <a href="/api/pricing" style="color:#445">Raw JSON</a></p>
+
+</body>
+</html>
