@@ -51,6 +51,41 @@
   }
   .header-back:hover { opacity: 1; text-decoration: underline; }
 
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-size: 0.7rem;
+    color: #5a7299;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .meta-item strong { color: #9ab3cc; font-weight: 600; }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #22c55e; display: inline-block; flex-shrink: 0;
+  }
+  .status-dot.stale { background: #f59e0b; }
+  #refreshBtn {
+    padding: 5px 13px;
+    background: #4a6cf7;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  #refreshBtn:hover { background: #3657d4; }
+  #refreshBtn:disabled { background: #334; cursor: default; opacity: 0.6; }
+
   /* ── Main container ── */
   .container {
     max-width: 960px;
@@ -292,9 +327,19 @@
 <!-- Header -->
 <div class="header">
   <div class="header-inner">
-    <div>
+    <div style="flex:1">
       <h1>LLM API Cost Impact &amp; Model Selection</h1>
-      <div class="header-sub">Per-million-token pricing · Anthropic · OpenAI · Google · June 2026</div>
+      <div class="header-sub">Per-million-token pricing · Anthropic · OpenAI · Google</div>
+      <div class="header-meta">
+        <div class="meta-item">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Loading…</span>
+        </div>
+        <div class="meta-item">Updated: <strong id="fetchedAt">—</strong></div>
+        <div class="meta-item">Next refresh: <strong id="nextRefresh">—</strong></div>
+        <div class="meta-item">Models tracked: <strong id="modelCount">—</strong></div>
+        <button id="refreshBtn" onclick="forceRefresh()">⟳ Force refresh</button>
+      </div>
     </div>
     <a class="header-back" href="/">← Back to tracker</a>
   </div>
@@ -448,5 +493,58 @@
   </div>
 
 </div>
+
+<script>
+function fmtDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    });
+  } catch { return iso; }
+}
+
+async function loadMeta() {
+  try {
+    const res = await fetch("/api/pricing");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+
+    document.getElementById("fetchedAt").textContent   = fmtDate(data.fetched_at_iso);
+    document.getElementById("nextRefresh").textContent = fmtDate(data.next_refresh_iso);
+    document.getElementById("modelCount").textContent  = (data.models || []).length + " models";
+
+    const sources = data.sources || {};
+    const fallbacks = Object.entries(sources).filter(([, v]) => v === "fallback").map(([k]) => k);
+    const dot = document.getElementById("statusDot");
+    const txt = document.getElementById("statusText");
+    if (fallbacks.length) {
+      dot.className = "status-dot stale";
+      txt.textContent = "Fallback data for: " + fallbacks.join(", ");
+    } else {
+      dot.className = "status-dot";
+      txt.textContent = "All sources live";
+    }
+  } catch (e) {
+    document.getElementById("statusText").textContent = "Could not load data status";
+  }
+}
+
+async function forceRefresh() {
+  const btn = document.getElementById("refreshBtn");
+  btn.disabled = true;
+  btn.textContent = "Refreshing…";
+  try {
+    await fetch("/api/refresh");
+    await loadMeta();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "⟳ Force refresh";
+  }
+}
+
+loadMeta();
+</script>
 </body>
 </html>
