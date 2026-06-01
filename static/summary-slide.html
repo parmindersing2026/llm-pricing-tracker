@@ -29,7 +29,7 @@
   .header-back:hover { text-decoration: underline; }
 
   /* ── Page ── */
-  .page { padding: 18px 40px 24px; }
+  .page { padding: 20px 60px 28px; }
 
   /* ── KPI strip ── */
   .kpi-row {
@@ -65,52 +65,58 @@
   .c-rose  { color: #dc2626; }
 
   /* ── Allocation card ── */
-  .alloc-wrap { margin-bottom: 14px; }
+  .alloc-wrap { margin-bottom: 16px; }
 
   .card {
     background: white;
     border: 1.5px solid #e4e8ef;
-    border-radius: 14px;
-    padding: 24px 28px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border-radius: 16px;
+    padding: 32px 40px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   }
   .card-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 28px;
   }
-  .card-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .card-title { font-size: 0.85rem; font-weight: 700; color: #333; text-transform: uppercase; letter-spacing: 0.07em; }
+  .card-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .card-title { font-size: 1rem; font-weight: 700; color: #222; text-transform: uppercase; letter-spacing: 0.08em; }
 
   /* ── Task allocation table ── */
   .alloc-table { width: 100%; border-collapse: collapse; }
   .alloc-table th {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.07em; color: #aaa; padding: 0 12px 12px 0;
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #bbb; padding: 0 16px 14px 16px;
     border-bottom: 2px solid #f0f2f5; text-align: left;
   }
+  .alloc-table th:first-child { padding-left: 20px; }
   .alloc-table td {
-    font-size: 0.88rem; color: #333; padding: 14px 12px 14px 0;
+    font-size: 1rem; color: #222; padding: 20px 16px;
     border-bottom: 1px solid #f0f2f5; vertical-align: middle;
-    line-height: 1.45;
+    line-height: 1.5;
   }
+  .alloc-table td:first-child { padding-left: 20px; border-left: 4px solid transparent; }
   .alloc-table tr:last-child td { border-bottom: none; }
+  .row-lite td:first-child    { border-left-color: #22c55e; }
+  .row-standard td:first-child { border-left-color: #3b82f6; }
+  .row-reasoning td:first-child { border-left-color: #ef4444; }
+  .row-flagship td:first-child  { border-left-color: #f59e0b; }
   .tier-pill {
-    display: inline-block; font-size: 0.72rem; font-weight: 700;
-    padding: 4px 12px; border-radius: 10px; white-space: nowrap;
+    display: inline-block; font-size: 0.82rem; font-weight: 700;
+    padding: 6px 16px; border-radius: 12px; white-space: nowrap;
   }
   .t-lite      { background: #dcfce7; color: #15803d; }
   .t-standard  { background: #dbeafe; color: #1d4ed8; }
   .t-flagship  { background: #fff3cd; color: #92400e; }
   .t-reasoning { background: #fee2e2; color: #b91c1c; }
   .saving-pill {
-    display: inline-block; font-size: 0.78rem; font-weight: 700;
-    padding: 4px 12px; border-radius: 10px; background: #f0fdf4; color: #16a34a;
+    display: inline-block; font-size: 0.88rem; font-weight: 700;
+    padding: 6px 16px; border-radius: 12px; background: #f0fdf4; color: #16a34a;
     white-space: nowrap;
   }
   .saving-pill.none { background: #fef9ec; color: #b45309; }
-  .model-hint { font-size: 0.76rem; color: #999; margin-top: 3px; }
+  .model-hint { font-size: 0.84rem; color: #aaa; margin-top: 5px; }
 
   /* ── Bottom callout ── */
   .callout-row {
@@ -212,40 +218,40 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
+          <tr class="row-lite">
             <td>
               Classification, intent routing, data extraction, tagging, form parsing
               <div class="model-hint">GPT-4o mini · Claude Haiku 4.5 · Gemini Flash-Lite</div>
             </td>
             <td><span class="tier-pill t-lite">Lite</span></td>
-            <td style="font-weight:700;font-size:0.95rem;color:#16a34a">$0.15–1</td>
+            <td style="font-weight:800;font-size:1.05rem;color:#16a34a">$0.15–1</td>
             <td><span class="saving-pill">Up to 97% cheaper</span></td>
           </tr>
-          <tr>
+          <tr class="row-standard">
             <td>
               Document summarisation, Q&amp;A, customer support, code assist, RAG pipelines
               <div class="model-hint">GPT-4.1 · GPT-4o · Claude Sonnet 4.x · Gemini 3.5 Flash</div>
             </td>
             <td><span class="tier-pill t-standard">Standard</span></td>
-            <td style="font-weight:700;font-size:0.95rem;color:#2563eb">$2.00–3</td>
+            <td style="font-weight:800;font-size:1.05rem;color:#2563eb">$2.00–3</td>
             <td><span class="saving-pill">40–60% cheaper</span></td>
           </tr>
-          <tr>
+          <tr class="row-reasoning">
             <td>
               Agentic workflows, multi-step planning, chain-of-thought, tool-use orchestration
               <div class="model-hint">o3 · o4-mini · Gemini Flash (thinking)</div>
             </td>
             <td><span class="tier-pill t-reasoning">Reasoning</span></td>
-            <td style="font-weight:700;font-size:0.95rem;color:#dc2626">$1.10–2</td>
+            <td style="font-weight:800;font-size:1.05rem;color:#dc2626">$1.10–2</td>
             <td><span class="saving-pill">60–78% cheaper</span></td>
           </tr>
-          <tr>
+          <tr class="row-flagship">
             <td>
               Complex strategy, legal/compliance analysis, nuanced long-form generation, high-stakes decisions
               <div class="model-hint">Claude Opus 4.x · Gemini 3.1 Pro</div>
             </td>
             <td><span class="tier-pill t-flagship">Flagship</span></td>
-            <td style="font-weight:700;font-size:0.95rem;color:#d97706">$5.00</td>
+            <td style="font-weight:800;font-size:1.05rem;color:#d97706">$5.00</td>
             <td><span class="saving-pill none">Baseline</span></td>
           </tr>
         </tbody>
