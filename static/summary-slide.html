@@ -64,10 +64,13 @@
   .c-blue  { color: #2563eb; }
   .c-rose  { color: #dc2626; }
 
-  /* ── Main 3-col grid ── */
+  /* ── Allocation (full-width) ── */
+  .alloc-wrap { margin-bottom: 14px; }
+
+  /* ── Bar charts row ── */
   .main-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr 1.25fr;
+    grid-template-columns: 1fr 1fr;
     gap: 14px;
     margin-bottom: 14px;
   }
@@ -226,7 +229,65 @@
     </div>
   </div>
 
-  <!-- 3-col main -->
+  <!-- Task allocation — primary -->
+  <div class="alloc-wrap">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="background:#a78bfa"></div>
+        <span class="card-title">Right-size by task / agent</span>
+      </div>
+      <table class="alloc-table">
+        <thead>
+          <tr>
+            <th>Task / Agent type</th>
+            <th>Tier</th>
+            <th>Input</th>
+            <th>Saving</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              Classification, routing,<br>data extraction, tagging
+              <div class="model-hint">GPT-4o mini · Haiku · Flash-Lite</div>
+            </td>
+            <td><span class="tier-pill t-lite">Lite</span></td>
+            <td style="font-weight:700;color:#16a34a">$0.15–1</td>
+            <td><span class="saving-pill">97% cheaper</span></td>
+          </tr>
+          <tr>
+            <td>
+              Summarisation, Q&amp;A,<br>code assist, RAG agents
+              <div class="model-hint">GPT-4.1 · GPT-4o · Sonnet</div>
+            </td>
+            <td><span class="tier-pill t-standard">Standard</span></td>
+            <td style="font-weight:700;color:#2563eb">$2.00–3</td>
+            <td><span class="saving-pill">40–60% cheaper</span></td>
+          </tr>
+          <tr>
+            <td>
+              Multi-step agents,<br>chain-of-thought, planning
+              <div class="model-hint">o3 · o4-mini · Gemini Flash</div>
+            </td>
+            <td><span class="tier-pill t-reasoning">Reasoning</span></td>
+            <td style="font-weight:700;color:#dc2626">$1.10–2</td>
+            <td><span class="saving-pill">60–78% cheaper</span></td>
+          </tr>
+          <tr>
+            <td>
+              Complex strategy, legal,<br>nuanced long-form generation
+              <div class="model-hint">Claude Opus · Gemini Pro</div>
+            </td>
+            <td><span class="tier-pill t-flagship">Flagship</span></td>
+            <td style="font-weight:700;color:#d97706">$5.00</td>
+            <td><span class="saving-pill none">Baseline</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bar charts — supporting detail -->
   <div class="main-grid">
 
     <!-- Input bars -->
@@ -353,62 +414,6 @@
           <span class="bar-val" style="color:#4285f4">$1.50</span>
         </div>
       </div>
-    </div>
-
-    <!-- Task allocation guide -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-dot" style="background:#a78bfa"></div>
-        <span class="card-title">Right-size by task / agent</span>
-      </div>
-      <table class="alloc-table">
-        <thead>
-          <tr>
-            <th>Task / Agent type</th>
-            <th>Tier</th>
-            <th>Input</th>
-            <th>Saving</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              Classification, routing,<br>data extraction, tagging
-              <div class="model-hint">GPT-4o mini · Haiku · Flash-Lite</div>
-            </td>
-            <td><span class="tier-pill t-lite">Lite</span></td>
-            <td style="font-weight:700;color:#16a34a">$0.15–1</td>
-            <td><span class="saving-pill">97% cheaper</span></td>
-          </tr>
-          <tr>
-            <td>
-              Summarisation, Q&amp;A,<br>code assist, RAG agents
-              <div class="model-hint">GPT-4.1 · GPT-4o · Sonnet</div>
-            </td>
-            <td><span class="tier-pill t-standard">Standard</span></td>
-            <td style="font-weight:700;color:#2563eb">$2.00–3</td>
-            <td><span class="saving-pill">40–60% cheaper</span></td>
-          </tr>
-          <tr>
-            <td>
-              Multi-step agents,<br>chain-of-thought, planning
-              <div class="model-hint">o3 · o4-mini · Gemini Flash</div>
-            </td>
-            <td><span class="tier-pill t-reasoning">Reasoning</span></td>
-            <td style="font-weight:700;color:#dc2626">$1.10–2</td>
-            <td><span class="saving-pill">60–78% cheaper</span></td>
-          </tr>
-          <tr>
-            <td>
-              Complex strategy, legal,<br>nuanced long-form generation
-              <div class="model-hint">Claude Opus · Gemini Pro</div>
-            </td>
-            <td><span class="tier-pill t-flagship">Flagship</span></td>
-            <td style="font-weight:700;color:#d97706">$5.00</td>
-            <td><span class="saving-pill none">Baseline</span></td>
-          </tr>
-        </tbody>
-      </table>
     </div>
 
   </div>
